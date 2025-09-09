@@ -1,9 +1,15 @@
--- Students
+-- =====================
+-- Database Schema
+-- =====================
+
+-- Students Table (Modified)
 CREATE TABLE students (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    roll_number VARCHAR(20) UNIQUE NOT NULL, -- New Roll Number column
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL
 );
+
 
 -- Teachers
 CREATE TABLE teachers (
@@ -33,6 +39,10 @@ CREATE TABLE results (
     FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
     FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 );
+
+-- =====================
+-- Functions
+-- =====================
 
 DELIMITER //
 CREATE FUNCTION getGrade(marks INT) RETURNS CHAR(2)
@@ -72,6 +82,28 @@ END;
 //
 DELIMITER ;
 
+-- Classify Student
+DELIMITER //
+CREATE FUNCTION classifyStudent(avgGpa DECIMAL(3,2)) RETURNS VARCHAR(20)
+DETERMINISTIC
+BEGIN
+    DECLARE result VARCHAR(20);
+    IF avgGpa >= 3.5 THEN
+        SET result = 'Honors';
+    ELSEIF avgGpa >= 2.0 THEN
+        SET result = 'Pass';
+    ELSE
+        SET result = 'Fail';
+    END IF;
+    RETURN result;
+END;
+//
+DELIMITER ;
+
+-- =====================
+-- Triggers
+-- =====================
+
 DELIMITER //
 CREATE TRIGGER before_result_insert
 BEFORE INSERT ON results
@@ -82,6 +114,31 @@ BEGIN
 END;
 //
 DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER before_result_update
+BEFORE UPDATE ON results
+FOR EACH ROW
+BEGIN
+    SET NEW.grade = getGrade(NEW.marks);
+    SET NEW.gpa = getGPA(getGrade(NEW.marks));
+END;
+//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER before_teacher_insert
+BEFORE INSERT ON teachers
+FOR EACH ROW
+BEGIN
+    SET NEW.email = LOWER(NEW.email);
+END;
+//
+DELIMITER ;
+
+-- =====================
+-- Procedures
+-- =====================
 
 DELIMITER //
 CREATE PROCEDURE getTranscript(IN studentId INT)
@@ -95,8 +152,28 @@ END;
 //
 DELIMITER ;
 
-CREATE VIEW student_gpa_summary AS
-SELECT s.id, s.name, AVG(r.gpa) AS average_gpa
+DELIMITER //
+CREATE PROCEDURE getGpaSummary()
+BEGIN
+    SELECT s.id, s.name, ROUND(AVG(r.gpa),1) AS avg_gpa, classifyStudent(AVG(r.gpa)) AS status
+    FROM students s
+    JOIN results r ON s.id = r.student_id
+    GROUP BY s.id
+    ORDER BY avg_gpa DESC;
+END;
+//
+DELIMITER ;
+
+-- =====================
+-- Views
+-- =====================
+
+CREATE OR REPLACE VIEW student_gpa_summary AS
+SELECT 
+    s.id, 
+    s.name, 
+    ROUND(AVG(r.gpa),1) AS average_gpa,
+    classifyStudent(AVG(r.gpa)) AS status
 FROM students s
 JOIN results r ON s.id = r.student_id
 GROUP BY s.id;

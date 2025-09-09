@@ -1,4 +1,11 @@
 <?php include "config.php"; ?>
+<?php
+session_start();
+if (!isset($_SESSION['teacher_id'])) {
+    header("Location: login.php");
+    exit();
+}
+?>
 <!DOCTYPE html>
 <html>
 <head>

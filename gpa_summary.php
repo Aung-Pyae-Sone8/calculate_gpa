@@ -14,7 +14,7 @@
         <?php
         $res = $con->query("SELECT * FROM student_gpa_summary");
         while ($row = $res->fetch_assoc()) {
-            echo "<tr><td class='p-2 border'>{$row['name']}</td><td class='p-2 border'>{$row['average_gpa']}</td></tr>";
+            echo "<tr><td class='p-2 border'>{$row['name']}</td><td class='p-2 border'>" . number_format($row['average_gpa'], 1) . "</td></tr>";
         }
         ?>
     </table>

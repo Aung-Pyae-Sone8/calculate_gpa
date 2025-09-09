@@ -1,4 +1,11 @@
-<?php include "config.php"; ?>
+<?php 
+include "config.php"; 
+session_start();
+if (!isset($_SESSION['teacher_id'])) {
+    header("Location: login.php");
+    exit();
+}
+?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -27,6 +34,15 @@
             echo "<p class='text-red-600 mb-4'>Error: Course code already exists.</p>";
         }
     }
+
+    // Delete Course
+    if (isset($_GET['delete'])) {
+        $id = intval($_GET['delete']);
+        $del = $con->prepare("DELETE FROM courses WHERE id=?");
+        $del->bind_param("i", $id);
+        $del->execute();
+        echo "<p class='text-red-600 mb-4'>Course deleted successfully!</p>";
+    }
     ?>
 
     <form method="POST" class="mb-6 grid grid-cols-4 gap-4">
@@ -42,6 +58,7 @@
             <th class="p-2 border">Course Code</th>
             <th class="p-2 border">Course Name</th>
             <th class="p-2 border">Credits</th>
+            <th class="p-2 border">Actions</th>
         </tr>
         <?php
         $res = $con->query("SELECT * FROM courses ORDER BY course_code ASC");
@@ -50,6 +67,10 @@
                     <td class='p-2 border'>{$row['course_code']}</td>
                     <td class='p-2 border'>{$row['course_name']}</td>
                     <td class='p-2 border text-center'>{$row['credits']}</td>
+                    <td class='p-2 border text-center'>
+                        <a href='edit_course.php?id={$row['id']}' class='text-blue-600 mr-2'>✏️</a>
+                        <a href='courses.php?delete={$row['id']}' onclick=\"return confirm('Are you sure you want to delete this course?');\" class='text-red-600'>🗑️</a>
+                    </td>
                   </tr>";
         }
         ?>
